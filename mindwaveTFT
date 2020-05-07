@@ -1,3 +1,9 @@
+//work in progress for: http://interactionstation.wdka.hro.nl/wiki/Mindwave#Connecting_Bluetooth_to_BlueSMiRF
+
+//Arduino with TFT screen, showing some data coming from the Mindwave head set
+
+//code hacked from https://learn.sparkfun.com/tutorials/hackers-in-residence---hacking-mindwave-mobile?_ga=2.146391420.932859955.1588796476-1975814699.1588796476#configuring-the-bluetooth-module
+
 ///////////////////////////////////////////////////////////////
 // Arduino Bluetooth Interface with Mindwave
 // Sophi Kravitz edit 11-4
@@ -23,10 +29,6 @@ TFT TFTscreen = TFT(cs, dc, rst);
 // char array to print to the screen
 char sensorPrintout[4];
 
-//#include <SoftwareSerial.h>     // library for software serial
-//SoftwareSerial mySerial(4, 5); // RX, TX
-int LED = 8;                    // yellow one
-int LED1 = 7;                   //white one
 int BAUDRATE = 57600;
 
 // checksum variables
@@ -43,13 +45,32 @@ byte meditation = 0;
 long lastReceivedPacket = 0;
 boolean bigPacket = false;
 boolean brainwave = false;
+
+long timer;
+int lineNumber = 0;
+
 void setup() {
-  pinMode(LED, OUTPUT);
-  pinMode(LED1, OUTPUT);
-  digitalWrite(LED, HIGH);   // hello sequence
+  pinMode(14, OUTPUT);
+  pinMode(15, OUTPUT);
+  pinMode(16, OUTPUT);
+  pinMode(17, OUTPUT);
+
+  digitalWrite(14, LOW);
+  digitalWrite(17, LOW);
+
+  digitalWrite(15, HIGH);   // hello sequence
   delay(100);
-  digitalWrite(LED, LOW);
+  digitalWrite(15, LOW);
   delay(100);
+  digitalWrite(15, HIGH);   // hello sequence
+  delay(100);
+  digitalWrite(15, LOW);
+  delay(100);
+  digitalWrite(15, HIGH);   // hello sequence
+  delay(100);
+  digitalWrite(15, LOW);
+  delay(100);
+
   Serial.begin(57600);       // Bluetooth
 
   pinMode(6, OUTPUT);
@@ -58,18 +79,8 @@ void setup() {
   // Put this line at the beginning of every sketch that uses the GLCD:
   TFTscreen.begin();
 
-  // clear the screen with a black background
-  TFTscreen.background(0, 0, 0);
+  startTFT();
 
-  // write the static text to the screen
-  // set the font color to white
-  TFTscreen.stroke(255, 255, 255);
-  // set the font size
-  TFTscreen.setTextSize(2);
-  // write the text to the top left corner of the screen
-  TFTscreen.text("Sensor Value :\n ", 0, 0);
-  // ste the font size very large for the loop
-  //TFTscreen.setTextSize(5);
 }
 byte ReadOneByte() {
   int ByteRead;
@@ -114,48 +125,50 @@ int read_3byte_int(int i) {
 
 void loop() {
 
-  // Read the value of the sensor on A0
-  String sensorVal = String(attention);
 
-  // convert the reading to a char array
-  sensorVal.toCharArray(sensorPrintout, 4);
+  /*
+      // Read the value of the sensor on A0
+      String sensorVal = String(attention);
 
-  // set the font color
-  TFTscreen.stroke(255, 255, 255);
-  // print the sensor value
-  TFTscreen.text(sensorPrintout, 0, 20);
-  // wait for a moment
-  //delay(50);
-  // erase the text you just wrote
-  TFTscreen.stroke(0, 0, 0);
-  TFTscreen.text(sensorPrintout, 0, 20);
+      // convert the reading to a char array
+      sensorVal.toCharArray(sensorPrintout, 4);
+
+      // set the font color
+      TFTscreen.stroke(255, 255, 255);
+      // print the sensor value
+      TFTscreen.text(sensorPrintout, 0, 20);
+  */
+
+
 
 
   // Look for sync bytes
   // Byte order: 0xAA, 0xAA, payloadLength, payloadData,
   // Checksum (sum all the bytes of payload, take lowest 8 bits, then bit inverse on lowest
   if (ReadOneByte() == 0xAA) {
+    /*
+        // set the font color
+        TFTscreen.stroke(255, 255, 255);
+        // print the sensor value
+        TFTscreen.text("first", 0, 50);
 
-    // set the font color
-    TFTscreen.stroke(255, 255, 255);
-    // print the sensor value
-    TFTscreen.text("first", 0, 50);
-
-    // erase the text you just wrote
-    TFTscreen.stroke(0, 0, 0);
-    TFTscreen.text("first", 0, 50);
+        // erase the text you just wrote
+        TFTscreen.stroke(0, 0, 0);
+        TFTscreen.text("first", 0, 50);
+    */
 
     if (ReadOneByte() == 0xAA) {
 
-      // set the font color
-      TFTscreen.stroke(255, 255, 255);
-      // print the sensor value
-      TFTscreen.text("second", 0, 70);
+      /*
+            // set the font color
+            TFTscreen.stroke(255, 255, 255);
+            // print the sensor value
+            TFTscreen.text("second", 0, 70);
 
-      // erase the text you just wrote
-      TFTscreen.stroke(0, 0, 0);
-      TFTscreen.text("second", 0, 70);
-
+            // erase the text you just wrote
+            TFTscreen.stroke(0, 0, 0);
+            TFTscreen.text("second", 0, 70);
+      */
 
       payloadLength = ReadOneByte();
       if (payloadLength > 169) //Payload length can not be greater than 169
@@ -179,13 +192,6 @@ void loop() {
             i++;
             poorQuality = payloadData[i];
             bigPacket = true;
-
-            TFTscreen.text("poor", 0, 150);
-
-            // erase the text you just wrote
-            TFTscreen.stroke(0, 0, 0);
-            TFTscreen.text("poor", 0, 150);
-
             break;
           case 04:
             i++;
@@ -212,48 +218,122 @@ void loop() {
 
       if (bigPacket) {
         if (poorQuality == 0) {
+
         }
         else {                            // do nothing
+
         }
       }
 
 
       if (brainwave && attention > 0 && attention < 100) {
-/*
-        mySerial.print("Attention value is: ");
-        mySerial.print(attention, DEC);
-        mySerial.println();
-        mySerial.print("Delta value is: ");
-        mySerial.print(delta_wave, DEC);
-        mySerial.println();
-        mySerial.print("Theta value is: ");
-        mySerial.print(theta_wave, DEC);
-        mySerial.println();
-        mySerial.print("Low Alpha value is: ");
-        mySerial.print(low_alpha_wave, DEC);
-        mySerial.println();
-        mySerial.print("High Alpha value is: ");
-        mySerial.print(high_alpha_wave, DEC);
-        mySerial.println();
-        mySerial.print("Alertness value1 is: ");
-        mySerial.print(low_beta_wave, DEC);
-        mySerial.println();
-        mySerial.print("Alertness value2 is: ");
-        mySerial.print(high_beta_wave, DEC);
-        mySerial.println();
-        mySerial.print(low_gamma_wave, DEC);
-        mySerial.println();
-        mySerial.print(mid_gamma_wave, DEC);
-        mySerial.println();
+        digitalWrite(15, HIGH);
+        /*
+                mySerial.print("Attention value is: ");
+                mySerial.print(attention, DEC);
+                mySerial.println();
+                mySerial.print("Delta value is: ");
+                mySerial.print(delta_wave, DEC);
+                mySerial.println();
+                mySerial.print("Theta value is: ");
+                mySerial.print(theta_wave, DEC);
+                mySerial.println();
+                mySerial.print("Low Alpha value is: ");
+                mySerial.print(low_alpha_wave, DEC);
+                mySerial.println();
+                mySerial.print("High Alpha value is: ");
+                mySerial.print(high_alpha_wave, DEC);
+                mySerial.println();
+                mySerial.print("Alertness value1 is: ");
+                mySerial.print(low_beta_wave, DEC);
+                mySerial.println();
+                mySerial.print("Alertness value2 is: ");
+                mySerial.print(high_beta_wave, DEC);
+                mySerial.println();
+                mySerial.print(low_gamma_wave, DEC);
+                mySerial.println();
+                mySerial.print(mid_gamma_wave, DEC);
+                mySerial.println();
         */
 
       }
-
-      if (attention > 40) {
-        digitalWrite(LED1, HIGH);
-      }
       else
-        digitalWrite(LED1, LOW);
+      {
+        digitalWrite(15, LOW);
+      }
+
+      if (attention > 40)
+      {
+        digitalWrite(16, HIGH);
+        // Read the value of the sensor on A0
+        String sensorVal = String(attention);
+
+        // convert the reading to a char array
+        sensorVal.toCharArray(sensorPrintout, 4);
+
+        // print the sensor value
+        TFTscreen.text(sensorPrintout, 0, 20 + lineNumber * 10);
+
+        sensorVal = String(delta_wave);
+
+        // convert the reading to a char array
+        sensorVal.toCharArray(sensorPrintout, 4);
+
+        // print the sensor value
+        TFTscreen.text(sensorPrintout, 25, 20 + lineNumber * 10);
+
+        sensorVal = String(theta_wave);
+
+        // convert the reading to a char array
+        sensorVal.toCharArray(sensorPrintout, 4);
+
+        // print the sensor value
+        TFTscreen.text(sensorPrintout, 50, 20 + lineNumber * 10);
+
+        sensorVal = String(low_alpha_wave);
+
+        // convert the reading to a char array
+        sensorVal.toCharArray(sensorPrintout, 4);
+
+        // print the sensor value
+        TFTscreen.text(sensorPrintout, 75, 20 + lineNumber * 10);
+
+        sensorVal = String(high_alpha_wave);
+
+        // convert the reading to a char array
+        sensorVal.toCharArray(sensorPrintout, 4);
+
+        // print the sensor value
+        TFTscreen.text(sensorPrintout, 100, 20 + lineNumber * 10);
+
+        lineNumber++;
+        if ( lineNumber > 12 )
+        {
+          startTFT();
+          lineNumber = 0;
+        }
+      }
+
+      else
+        digitalWrite(16, LOW);
     }
   }
+}
+
+void startTFT() {
+  // Put this line at the beginning of every sketch that uses the GLCD:
+  TFTscreen.begin();
+
+  // clear the screen with a black background
+  TFTscreen.background(0, 0, 0);
+
+  // write the static text to the screen
+  // set the font color to white
+  TFTscreen.stroke(255, 255, 255);
+  // set the font size
+  TFTscreen.setTextSize(1);
+  // write the text to the top left corner of the screen
+  TFTscreen.text("Attention Values :\n ", 0, 0);
+  // ste the font size very large for the loop
+  //TFTscreen.setTextSize(5);
 }
